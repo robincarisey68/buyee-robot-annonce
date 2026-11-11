@@ -8,5 +8,36 @@
     "ポケモンキッズ"
   ],
   "surveiller_yahoo_auctions": true,
-  "surveiller_mercari": true
+  "surveiller_mercari": true,
+  "salons": [
+    {
+      "nom": "special",
+      "secret": "DISCORD_WEBHOOK_SPECIAL",
+      "si_le_titre_contient": [
+        "クリア",
+        "当選"
+      ]
+    },
+    {
+      "nom": "shiny",
+      "secret": "DISCORD_WEBHOOK_SHINY",
+      "si_le_titre_contient": [
+        "色違い"
+      ]
+    },
+    {
+      "nom": "pokemon-kids",
+      "secret": "DISCORD_WEBHOOK_POKEMON_KIDS",
+      "si_le_titre_contient": [
+        "ポケモンキッズ",
+        "ポケモンキッス"
+      ]
+    },
+    {
+      "nom": "finger-puppet",
+      "secret": "DISCORD_WEBHOOK_FINGER_PUPPET",
+      "si_le_titre_contient": []
+    }
+  ],
+  "_aide_salons": "Chaque annonce va dans le PREMIER salon dont un mot est dans son titre. Le dernier salon (liste vide) reçoit tout le reste. Si un secret manque, l'annonce va dans #général."
 }

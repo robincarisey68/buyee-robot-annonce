@@ -138,6 +138,16 @@ def envoyer_discord(webhook, contenu=None, embeds=None):
         return
 
 
+def choisir_salon(annonce, salons):
+    """Renvoie le salon (dict) de l'annonce : le premier dont un mot est dans le titre."""
+    titre = annonce["titre"]
+    for salon in salons:
+        mots = salon.get("si_le_titre_contient") or []
+        if not mots or any(m in titre for m in mots):
+            return salon
+    return None
+
+
 def carte(annonce):
     e = {
         "title": annonce["titre"][:250],
@@ -243,10 +253,19 @@ def main():
         if len(nouvelles) > 40:
             envoyer_discord(webhook, f"📦 {len(nouvelles)} nouvelles annonces d'un coup, voici les 40 plus récentes :")
             nouvelles = nouvelles[:40]
-        for i in range(0, len(nouvelles), 10):  # Discord : 10 cartes max par message
-            paquet = nouvelles[i : i + 10]
-            entete = "🔔 Nouvelle annonce !" if len(nouvelles) == 1 else None
-            envoyer_discord(webhook, entete if i == 0 else None, [carte(a) for a in paquet])
+        # On range chaque annonce dans son salon Discord (#général si pas de lien pour ce salon).
+        par_salon = {}
+        for a in nouvelles:
+            salon = choisir_salon(a, config.get("salons", []))
+            lien = os.environ.get(salon["secret"], "").strip() if salon else ""
+            if salon:
+                a["salon"] = salon["nom"]
+            par_salon.setdefault(lien or webhook, []).append(a)
+        for lien, liste in par_salon.items():
+            for i in range(0, len(liste), 10):  # Discord : 10 cartes max par message
+                paquet = liste[i : i + 10]
+                entete = "🔔 Nouvelle annonce !" if len(liste) == 1 else None
+                envoyer_discord(lien, entete if i == 0 else None, [carte(a) for a in paquet])
     else:
         print("Aucune nouvelle annonce.")
 

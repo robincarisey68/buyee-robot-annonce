@@ -45,3 +45,16 @@ Tu peux aussi désactiver Mercari en mettant `"surveiller_mercari": false`.
 - Si les sites ne répondent plus pendant 3 h, le robot t'envoie un message ⚠️ sur Discord.
 - Le robot enregistre sa mémoire (`seen.json`) dans le dépôt à chaque passage, c'est normal.
 - Pour arrêter le robot : onglet **Actions** → **Robot Buyee** → **⋯** → **Disable workflow**.
+
+## Un salon Discord par type d'annonce
+
+Le robot range chaque annonce selon son titre (réglable dans `config.json`, rubrique `salons`) :
+
+| Salon | Titre contient | Secret GitHub |
+|---|---|---|
+| #special | クリア ou 当選 | `DISCORD_WEBHOOK_SPECIAL` |
+| #shiny | 色違い | `DISCORD_WEBHOOK_SHINY` |
+| #pokemon-kids | ポケモンキッズ | `DISCORD_WEBHOOK_POKEMON_KIDS` |
+| #finger-puppet | tout le reste | `DISCORD_WEBHOOK_FINGER_PUPPET` |
+
+Si un secret manque, les annonces de ce salon vont dans #général. Les messages du robot (démarrage, panne) restent dans #général.

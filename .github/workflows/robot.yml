@@ -29,6 +29,10 @@ jobs:
       - name: Chercher les nouvelles annonces
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_SHINY: ${{ secrets.DISCORD_WEBHOOK_SHINY }}
+          DISCORD_WEBHOOK_POKEMON_KIDS: ${{ secrets.DISCORD_WEBHOOK_POKEMON_KIDS }}
+          DISCORD_WEBHOOK_FINGER_PUPPET: ${{ secrets.DISCORD_WEBHOOK_FINGER_PUPPET }}
+          DISCORD_WEBHOOK_SPECIAL: ${{ secrets.DISCORD_WEBHOOK_SPECIAL }}
         run: python robot.py
 
       - name: Enregistrer la mémoire
