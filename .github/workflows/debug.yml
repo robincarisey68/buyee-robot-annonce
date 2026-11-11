@@ -5,9 +5,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          curl -sS -L -o y.html -w "HTTP %{http_code} size %{size_download} url %{url_effective}\n" -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" -H "Accept-Language: ja" "https://auctions.yahoo.co.jp/search/search?p=%E3%83%9D%E3%82%B1%E3%83%A2%E3%83%B3%E3%82%AD%E3%83%83%E3%82%BA&s1=new&o1=d&n=50"
-          head -c 1500 y.html; echo; echo ----
-          grep -o 'auction/[A-Za-z0-9]\{6,\}' y.html | sort | uniq -c | head
-          grep -o '.\{300\}/jp/auction/.\{300\}' y.html | head -3
-          grep -o '"auctionId":"[^"]*"' y.html | head -3
-          curl -sS -o b.html -w "BUYEE HTTP %{http_code} size %{size_download}\n" -A "Mozilla/5.0" "https://buyee.jp/item/search/query/%E3%83%9D%E3%82%B1%E3%83%A2%E3%83%B3%E3%82%AD%E3%83%83%E3%82%BA?sort=new" ; grep -o 'auction/[A-Za-z0-9]\{6,\}' b.html | head -3
+          curl -sS -L -o y.html -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" -H "Accept-Language: ja" "https://auctions.yahoo.co.jp/search/search?p=%E3%83%9D%E3%82%B1%E3%83%A2%E3%83%B3%E3%82%AD%E3%83%83%E3%82%BA&s1=new&o1=d&n=50"
+          python3 - <<'PY'
+          import re,json
+          h=open('y.html',encoding='utf-8').read()
+          for m in re.finditer(r'<script[^>]*id="([^"]+)"[^>]*>',h): print("script id",m.group(1))
+          i=h.find('"auctionId":"')
+          print(h[i-1500:i+2500])
+          print("=====")
+          i=h.find('"auctionId":"', i+10)
+          print(h[i-300:i+300])
+          print("COUNT auctionId", h.count('"auctionId":"'))
+          PY
