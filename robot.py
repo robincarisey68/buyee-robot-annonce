@@ -26,6 +26,10 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.join(ICI, "config.json")
 MEMOIRE = os.path.join(ICI, "seen.json")
 MAX_MEMOIRE = 20000          # nombre max d'annonces gardées en mémoire
+ANCIENS_MOTS_CLES = [  # mots-clés déjà surveillés avant l'arrivée des salons
+    "指人形 色違い", "ポケモンキッズ 色違い", "ポケモンキッズ ピカチュウ クリアバージョン",
+    "ポケモンキッズ 当選品 ピカチュウ", "ポケモン 指人形", "ポケモンキッズ",
+]
 ALERTE_APRES_ECHECS = 6      # 6 passages ratés d'affilée = 3 h -> message d'alerte
 
 NAVIGATEUR = {
@@ -138,14 +142,8 @@ def envoyer_discord(webhook, contenu=None, embeds=None):
         return
 
 
-def choisir_salon(annonce, salons):
-    """Renvoie le salon (dict) de l'annonce : le premier dont un mot est dans le titre."""
-    titre = annonce["titre"]
-    for salon in salons:
-        mots = salon.get("si_le_titre_contient") or []
-        if not mots or any(m in titre for m in mots):
-            return salon
-    return None
+def nom_court(site):
+    return "yahoo" if site.startswith("Yahoo") else "mercari"
 
 
 def carte(annonce):
@@ -180,12 +178,13 @@ def main():
         with open(MEMOIRE, encoding="utf-8") as f:
             memoire.update(json.load(f))
     deja_vues = set(memoire["vues"])
-    # Un site est "initialisé" quand on a déjà mémorisé ses annonces au moins une fois.
-    # Tant qu'il ne l'est pas, on mémorise sans envoyer (pour ne pas t'inonder).
-    if "sites_initialises" not in memoire:
-        memoire["sites_initialises"] = sorted({c.split(":")[0] for c in deja_vues})
-    initialises = set(memoire["sites_initialises"])
-    a_initialiser = set()
+    # Une recherche (site + mot-clé) est "initialisée" quand on a déjà mémorisé ses annonces
+    # une fois. Pour une nouvelle recherche, on mémorise sans envoyer (pour ne pas t'inonder).
+    if "recherches_initialisees" not in memoire:
+        memoire["recherches_initialisees"] = [
+            f"{site}|{mc}" for site in memoire.get("sites_initialises", []) for mc in ANCIENS_MOTS_CLES
+        ]
+    initialisees = set(memoire["recherches_initialisees"])
     nb_memorisees = 0
 
     sources = []
@@ -195,7 +194,8 @@ def main():
         sources.append(("Mercari", chercher_mercari))
 
     nouvelles, reussites, erreurs = [], 0, []
-    for mot_cle in config["mots_cles"]:
+    recherches = [(salon, mc) for salon in config["salons"] for mc in salon["mots_cles"]]
+    for salon, mot_cle in recherches:
         for nom, fonction in sources:
             try:
                 trouvees = fonction(mot_cle)
@@ -205,10 +205,11 @@ def main():
                 erreurs.append(f"{nom} / {mot_cle} : {exc}")
                 print(f"ERREUR {nom} | {mot_cle} : {exc}", file=sys.stderr)
                 continue
+            recherche = f"{nom_court(nom)}|{mot_cle}"
+            nouvelle_recherche = recherche not in initialisees
+            initialisees.add(recherche)
             for a in trouvees:
-                prefixe = a["cle"].split(":")[0]
-                if prefixe not in initialises:
-                    a_initialiser.add(prefixe)
+                if nouvelle_recherche:
                     if a["cle"] not in deja_vues:
                         deja_vues.add(a["cle"])
                         memoire["vues"].append(a["cle"])
@@ -217,6 +218,7 @@ def main():
                 if a["cle"] not in deja_vues:
                     deja_vues.add(a["cle"])
                     a["mot_cle"] = mot_cle
+                    a["salon"] = salon
                     nouvelles.append(a)
                     memoire["vues"].append(a["cle"])
             time.sleep(1)  # on reste poli avec les sites
@@ -256,10 +258,7 @@ def main():
         # On range chaque annonce dans son salon Discord (#général si pas de lien pour ce salon).
         par_salon = {}
         for a in nouvelles:
-            salon = choisir_salon(a, config.get("salons", []))
-            lien = os.environ.get(salon["secret"], "").strip() if salon else ""
-            if salon:
-                a["salon"] = salon["nom"]
+            lien = os.environ.get(a["salon"]["secret"], "").strip()
             par_salon.setdefault(lien or webhook, []).append(a)
         for lien, liste in par_salon.items():
             for i in range(0, len(liste), 10):  # Discord : 10 cartes max par message
@@ -269,7 +268,8 @@ def main():
     else:
         print("Aucune nouvelle annonce.")
 
-    memoire["sites_initialises"] = sorted(initialises | a_initialiser)
+    memoire.pop("sites_initialises", None)
+    memoire["recherches_initialisees"] = sorted(initialisees)
     memoire["vues"] = memoire["vues"][-MAX_MEMOIRE:]
     memoire["dernier_passage"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with open(MEMOIRE, "w", encoding="utf-8") as f:

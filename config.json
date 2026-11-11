@@ -1,43 +1,40 @@
 {
-  "mots_cles": [
-    "指人形 色違い",
-    "ポケモンキッズ 色違い",
-    "ポケモンキッズ ピカチュウ クリアバージョン",
-    "ポケモンキッズ 当選品 ピカチュウ",
-    "ポケモン 指人形",
-    "ポケモンキッズ"
-  ],
-  "surveiller_yahoo_auctions": true,
-  "surveiller_mercari": true,
+  "_aide": "Chaque salon a ses mots-clés de recherche. Une annonce trouvée par plusieurs salons va dans le PREMIER de la liste. Si le secret d'un salon manque, ses annonces vont dans #général.",
   "salons": [
     {
       "nom": "special",
       "secret": "DISCORD_WEBHOOK_SPECIAL",
-      "si_le_titre_contient": [
-        "クリア",
-        "当選"
+      "mots_cles": [
+        "ポケモン ポケモンキッズ 色違いメガレックウザ",
+        "ポケモンキッズ 当選品 限定",
+        "ポケモンキッズ 当選品 ピカチュウ",
+        "ポケモンキッズ ピカチュウ クリアバージョン"
       ]
     },
     {
       "nom": "shiny",
       "secret": "DISCORD_WEBHOOK_SHINY",
-      "si_le_titre_contient": [
-        "色違い"
-      ]
-    },
-    {
-      "nom": "pokemon-kids",
-      "secret": "DISCORD_WEBHOOK_POKEMON_KIDS",
-      "si_le_titre_contient": [
-        "ポケモンキッズ",
-        "ポケモンキッス"
+      "mots_cles": [
+        "指人形 色違い",
+        "ポケモンキッズ 色違い",
+        "ポケモンキッズ 当選品"
       ]
     },
     {
       "nom": "finger-puppet",
       "secret": "DISCORD_WEBHOOK_FINGER_PUPPET",
-      "si_le_titre_contient": []
+      "mots_cles": [
+        "ポケモン 指人形"
+      ]
+    },
+    {
+      "nom": "pokemon-kids",
+      "secret": "DISCORD_WEBHOOK_POKEMON_KIDS",
+      "mots_cles": [
+        "ポケモンキッズ"
+      ]
     }
   ],
-  "_aide_salons": "Chaque annonce va dans le PREMIER salon dont un mot est dans son titre. Le dernier salon (liste vide) reçoit tout le reste. Si un secret manque, l'annonce va dans #général."
+  "surveiller_yahoo_auctions": true,
+  "surveiller_mercari": true
 }

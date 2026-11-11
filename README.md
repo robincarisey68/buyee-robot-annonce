@@ -37,7 +37,7 @@ les annonces déjà en ligne. Ensuite il ne t'envoie que les nouvelles.
 
 ## Changer les mots-clés
 
-Ouvre `config.json` sur GitHub, clique sur le crayon ✏️, modifie la liste, puis **Commit changes**.
+Ouvre `config.json` sur GitHub, clique sur le crayon ✏️, modifie les listes `mots_cles` des salons, puis **Commit changes**.
 Tu peux aussi désactiver Mercari en mettant `"surveiller_mercari": false`.
 
 ## Bon à savoir
@@ -48,13 +48,15 @@ Tu peux aussi désactiver Mercari en mettant `"surveiller_mercari": false`.
 
 ## Un salon Discord par type d'annonce
 
-Le robot range chaque annonce selon son titre (réglable dans `config.json`, rubrique `salons`) :
+Chaque salon a ses propres mots-clés de recherche (dans `config.json`, rubrique `salons`) :
 
-| Salon | Titre contient | Secret GitHub |
+| Salon | Mots-clés | Secret GitHub |
 |---|---|---|
-| #special | クリア ou 当選 | `DISCORD_WEBHOOK_SPECIAL` |
-| #shiny | 色違い | `DISCORD_WEBHOOK_SHINY` |
+| #special | ポケモン ポケモンキッズ 色違いメガレックウザ · ポケモンキッズ 当選品 限定 · ポケモンキッズ 当選品 ピカチュウ · ポケモンキッズ ピカチュウ クリアバージョン | `DISCORD_WEBHOOK_SPECIAL` |
+| #shiny | 指人形 色違い · ポケモンキッズ 色違い · ポケモンキッズ 当選品 | `DISCORD_WEBHOOK_SHINY` |
+| #finger-puppet | ポケモン 指人形 | `DISCORD_WEBHOOK_FINGER_PUPPET` |
 | #pokemon-kids | ポケモンキッズ | `DISCORD_WEBHOOK_POKEMON_KIDS` |
-| #finger-puppet | tout le reste | `DISCORD_WEBHOOK_FINGER_PUPPET` |
 
+Une annonce trouvée par plusieurs salons n'est envoyée qu'une fois, dans le premier salon de la liste.
+Quand tu ajoutes un mot-clé, les annonces déjà en ligne pour lui sont mémorisées sans être envoyées.
 Si un secret manque, les annonces de ce salon vont dans #général. Les messages du robot (démarrage, panne) restent dans #général.
