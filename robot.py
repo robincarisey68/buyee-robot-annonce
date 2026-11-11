@@ -21,7 +21,6 @@ import urllib.parse
 from datetime import datetime, timezone
 
 import requests
-from bs4 import BeautifulSoup
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.join(ICI, "config.json")
@@ -50,41 +49,38 @@ def chercher_yahoo(mot_cle):
     )
     r = requests.get(url, headers=NAVIGATEUR, timeout=30)
     r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
-
-    annonces = {}
-    for a in soup.select("a[href*='/jp/auction/'], a[data-auction-id]"):
-        m = re.search(r"/jp/auction/([A-Za-z0-9]+)", a.get("href", ""))
-        aid = a.get("data-auction-id") or (m.group(1) if m else None)
-        if not aid:
-            continue
-        info = annonces.setdefault(aid, {"titre": "", "prix": "", "image": ""})
-        titre = (
-            a.get("data-auction-title")
-            or a.get("title")
-            or a.get_text(" ", strip=True)
-            or (a.img.get("alt", "") if a.img else "")
-        )
-        if titre and len(titre) > len(info["titre"]):
-            info["titre"] = titre
-        if a.get("data-auction-price") and not info["prix"]:
-            info["prix"] = a["data-auction-price"]
-        img = a.get("data-auction-img") or (a.img.get("src", "") if a.img else "")
-        if img.startswith("http") and not info["image"]:
-            info["image"] = img
+    m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', r.text, re.S)
+    if not m:
+        raise RuntimeError("page Yahoo illisible (pas de __NEXT_DATA__)")
+    donnees = json.loads(m.group(1))
+    try:
+        items = donnees["props"]["pageProps"]["initialState"]["search"]["items"]["listing"]["items"]
+    except (KeyError, TypeError):
+        raise RuntimeError("page Yahoo illisible (liste d'annonces introuvable)")
 
     resultats = []
-    for aid, info in annonces.items():
-        prix = info["prix"]
+    for it in items or []:
+        aid = it.get("auctionId")
+        if not aid:
+            continue
+        prix = it.get("price") or it.get("buyNowPrice")
+        if it.get("isFleamarketItem"):
+            site = "PayPay Flea Market"
+            buyee = f"https://buyee.jp/paypayfleamarket/item/{aid}"
+            origine = f"https://paypayfleamarket.yahoo.co.jp/item/{aid}"
+        else:
+            site = "Yahoo Auctions"
+            buyee = f"https://buyee.jp/item/yahoo/auction/{aid}"
+            origine = f"https://auctions.yahoo.co.jp/jp/auction/{aid}"
         resultats.append(
             {
                 "cle": f"yahoo:{aid}",
-                "site": "Yahoo Auctions",
-                "titre": html.unescape(info["titre"]) or f"Enchère {aid}",
-                "prix": f"{int(prix):,} ¥".replace(",", " ") if str(prix).isdigit() else "",
-                "image": info["image"],
-                "lien_buyee": f"https://buyee.jp/item/yahoo/auction/{aid}",
-                "lien_origine": f"https://auctions.yahoo.co.jp/jp/auction/{aid}",
+                "site": site,
+                "titre": html.unescape(it.get("title") or f"Annonce {aid}"),
+                "prix": f"{int(prix):,} ¥".replace(",", " ") if prix else "",
+                "image": it.get("imageUrl") or "",
+                "lien_buyee": buyee,
+                "lien_origine": origine,
             }
         )
     return resultats
@@ -146,7 +142,7 @@ def carte(annonce):
     e = {
         "title": annonce["titre"][:250],
         "url": annonce["lien_buyee"],
-        "color": 0xF7C600 if annonce["site"] == "Yahoo Auctions" else 0xFF4F50,
+        "color": {"Yahoo Auctions": 0xF7C600, "PayPay Flea Market": 0xFF0033}.get(annonce["site"], 0x4DC9FF),
         "fields": [
             {"name": "Site", "value": annonce["site"], "inline": True},
             {"name": "Mot-clé", "value": annonce["mot_cle"], "inline": True},
@@ -174,6 +170,13 @@ def main():
         with open(MEMOIRE, encoding="utf-8") as f:
             memoire.update(json.load(f))
     deja_vues = set(memoire["vues"])
+    # Un site est "initialisé" quand on a déjà mémorisé ses annonces au moins une fois.
+    # Tant qu'il ne l'est pas, on mémorise sans envoyer (pour ne pas t'inonder).
+    if "sites_initialises" not in memoire:
+        memoire["sites_initialises"] = sorted({c.split(":")[0] for c in deja_vues})
+    initialises = set(memoire["sites_initialises"])
+    a_initialiser = set()
+    nb_memorisees = 0
 
     sources = []
     if config.get("surveiller_yahoo_auctions", True):
@@ -193,6 +196,14 @@ def main():
                 print(f"ERREUR {nom} | {mot_cle} : {exc}", file=sys.stderr)
                 continue
             for a in trouvees:
+                prefixe = a["cle"].split(":")[0]
+                if prefixe not in initialises:
+                    a_initialiser.add(prefixe)
+                    if a["cle"] not in deja_vues:
+                        deja_vues.add(a["cle"])
+                        memoire["vues"].append(a["cle"])
+                        nb_memorisees += 1
+                    continue
                 if a["cle"] not in deja_vues:
                     deja_vues.add(a["cle"])
                     a["mot_cle"] = mot_cle
@@ -224,7 +235,7 @@ def main():
         # Premier lancement : on mémorise ce qui existe déjà sans tout envoyer.
         envoyer_discord(
             webhook,
-            f"🤖 Robot Buyee activé ! {len(nouvelles)} annonces déjà en ligne ont été mémorisées. "
+            f"🤖 Robot Buyee activé ! {nb_memorisees} annonces déjà en ligne ont été mémorisées. "
             "Je te préviendrai uniquement des **nouvelles** annonces, toutes les 30 min.",
         )
     elif nouvelles:
@@ -239,6 +250,7 @@ def main():
     else:
         print("Aucune nouvelle annonce.")
 
+    memoire["sites_initialises"] = sorted(initialises | a_initialiser)
     memoire["vues"] = memoire["vues"][-MAX_MEMOIRE:]
     memoire["dernier_passage"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     with open(MEMOIRE, "w", encoding="utf-8") as f:
