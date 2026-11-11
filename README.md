@@ -1,6 +1,6 @@
 # Robot d'alerte Buyee
 
-Toutes les 30 minutes, ce robot cherche les nouvelles annonces Yahoo Auctions (avec PayPay Flea Market) et Mercari
+En continu (une vérification toutes les 3 minutes), ce robot cherche les nouvelles annonces Yahoo Auctions (avec PayPay Flea Market) et Mercari
 (les deux sites que Buyee revend) pour tes mots-clés, et t'envoie sur Discord
 uniquement celles qu'il n'a encore jamais vues, avec le lien Buyee direct.
 

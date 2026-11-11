@@ -1,21 +1,23 @@
 name: Robot Buyee
 
+# Le robot tourne en continu : chaque lancement surveille pendant ~5 h 40
+# (une vérification toutes les 3 min), puis le lancement suivant prend le relais.
 on:
   schedule:
-    - cron: "*/30 * * * *"   # toutes les 30 minutes
-  workflow_dispatch:          # bouton "Run workflow" pour lancer à la main
+    - cron: "*/30 * * * *"    # relance de secours si le robot s'est arrêté
+  workflow_dispatch:           # bouton "Run workflow" pour lancer à la main
 
 permissions:
-  contents: write             # pour enregistrer la mémoire (seen.json)
+  contents: write              # pour enregistrer la mémoire (seen.json)
 
 concurrency:
   group: robot-buyee
-  cancel-in-progress: false
+  cancel-in-progress: false    # un seul robot à la fois, le suivant attend son tour
 
 jobs:
   surveiller:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 
@@ -26,23 +28,28 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Chercher les nouvelles annonces
+      - name: Surveiller en continu
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           DISCORD_WEBHOOK_SHINY: ${{ secrets.DISCORD_WEBHOOK_SHINY }}
           DISCORD_WEBHOOK_POKEMON_KIDS: ${{ secrets.DISCORD_WEBHOOK_POKEMON_KIDS }}
           DISCORD_WEBHOOK_FINGER_PUPPET: ${{ secrets.DISCORD_WEBHOOK_FINGER_PUPPET }}
           DISCORD_WEBHOOK_SPECIAL: ${{ secrets.DISCORD_WEBHOOK_SPECIAL }}
-        run: python robot.py
-
-      - name: Enregistrer la mémoire
-        if: always()
+          PAUSE_SECONDES: 180      # temps entre deux vérifications
+          DUREE_MINUTES: 340       # durée d'un lancement (max GitHub : 360)
         run: |
-          [ -f seen.json ] || exit 0
           git config user.name "robot-buyee"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add seen.json
-          git diff --cached --quiet && exit 0
-          git commit -m "Mémoire du robot"
-          git pull --rebase -X theirs || true
-          git push
+          fin=$(( $(date +%s) + DUREE_MINUTES * 60 ))
+          while [ "$(date +%s)" -lt "$fin" ]; do
+            git pull -q --rebase -X theirs || git rebase --abort || true   # récupère tes changements de mots-clés
+            python robot.py || echo "Passage raté, on réessaie au prochain tour."
+            if [ -f seen.json ]; then
+              git add seen.json
+              if ! git diff --cached --quiet; then
+                git commit -q -m "Mémoire du robot"
+                git push -q || { git pull -q --rebase -X theirs && git push -q; } || true
+              fi
+            fi
+            sleep "$PAUSE_SECONDES"
+          done

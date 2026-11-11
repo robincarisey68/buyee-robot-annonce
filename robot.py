@@ -1,6 +1,6 @@
 """Robot d'alerte Buyee.
 
-A chaque passage (toutes les 30 min via GitHub Actions) :
+A chaque passage (toutes les 3 min environ, via GitHub Actions) :
   1. cherche les annonces les plus récentes pour chaque mot-clé de config.json
      (Yahoo Auctions Japon, et Mercari Japon) ;
   2. garde seulement celles jamais vues (mémoire dans seen.json) ;
@@ -30,7 +30,7 @@ ANCIENS_MOTS_CLES = [  # mots-clés déjà surveillés avant l'arrivée des salo
     "指人形 色違い", "ポケモンキッズ 色違い", "ポケモンキッズ ピカチュウ クリアバージョン",
     "ポケモンキッズ 当選品 ピカチュウ", "ポケモン 指人形", "ポケモンキッズ",
 ]
-ALERTE_APRES_ECHECS = 6      # 6 passages ratés d'affilée = 3 h -> message d'alerte
+ALERTE_APRES_ECHECS = 60     # 60 passages ratés d'affilée (~3 h) -> message d'alerte
 
 NAVIGATEUR = {
     "User-Agent": (
@@ -234,7 +234,7 @@ def main():
             envoyer_discord(
                 webhook,
                 "⚠️ Le robot Buyee n'arrive plus à lire les sites depuis environ 3 h. "
-                "Il réessaie toutes les 30 min.\n```" + "\n".join(erreurs[:5])[:1500] + "```",
+                "Il réessaie toutes les 3 min.\n```" + "\n".join(erreurs[:5])[:1500] + "```",
             )
             memoire["alerte_envoyee"] = True
     else:
@@ -248,7 +248,7 @@ def main():
         envoyer_discord(
             webhook,
             f"🤖 Robot Buyee activé ! {nb_memorisees} annonces déjà en ligne ont été mémorisées. "
-            "Je te préviendrai uniquement des **nouvelles** annonces, toutes les 30 min.",
+            "Je te préviendrai uniquement des **nouvelles** annonces, en continu (toutes les 3 min).",
         )
     elif nouvelles:
         print(f"{len(nouvelles)} nouvelle(s) annonce(s)")
@@ -271,7 +271,7 @@ def main():
     memoire.pop("sites_initialises", None)
     memoire["recherches_initialisees"] = sorted(initialisees)
     memoire["vues"] = memoire["vues"][-MAX_MEMOIRE:]
-    memoire["dernier_passage"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    memoire.pop("dernier_passage", None)
     with open(MEMOIRE, "w", encoding="utf-8") as f:
         json.dump(memoire, f, ensure_ascii=False, indent=0)
 
