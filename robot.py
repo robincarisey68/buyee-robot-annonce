@@ -74,7 +74,7 @@ def chercher_yahoo(mot_cle):
             origine = f"https://paypayfleamarket.yahoo.co.jp/item/{aid}"
         else:
             site = "Yahoo Auctions"
-            buyee = f"https://buyee.jp/item/yahoo/auction/{aid}"
+            buyee = f"https://buyee.jp/item/jdirectitems/auction/{aid}"
             origine = f"https://auctions.yahoo.co.jp/jp/auction/{aid}"
         resultats.append(
             {
@@ -107,14 +107,19 @@ async def _mercari(mot_cle):
     resultats = []
     for it in res.items[:60]:
         prix = getattr(it, "real_price", it.price)
+        # Les « enchères Mercari » (オークション商品) n'existent pas sur Buyee :
+        # le lien Buyee donne une page 404. On les signale quand même, mais
+        # sans lien Buyee.
+        enchere = getattr(it, "auction", None)
+        est_enchere = bool(enchere and (getattr(enchere, "id_", None) or getattr(enchere, "bid_deadline", None)))
         resultats.append(
             {
                 "cle": f"mercari:{it.id_}",
-                "site": "Mercari",
+                "site": "Mercari (enchère)" if est_enchere else "Mercari",
                 "titre": it.name,
                 "prix": f"{prix:,} ¥".replace(",", " ") if prix else "",
                 "image": it.thumbnails[0] if it.thumbnails else "",
-                "lien_buyee": f"https://buyee.jp/mercari/item/{it.id_}",
+                "lien_buyee": "" if est_enchere else f"https://buyee.jp/mercari/item/{it.id_}",
                 "lien_origine": f"https://jp.mercari.com/item/{it.id_}",
             }
         )
@@ -149,13 +154,17 @@ def nom_court(site):
 def carte(annonce):
     e = {
         "title": annonce["titre"][:250],
-        "url": annonce["lien_buyee"],
+        "url": annonce["lien_buyee"] or annonce["lien_origine"],
         "color": {"Yahoo Auctions": 0xF7C600, "PayPay Flea Market": 0xFF0033}.get(annonce["site"], 0x4DC9FF),
         "fields": [
             {"name": "Site", "value": annonce["site"], "inline": True},
             {"name": "Mot-clé", "value": annonce["mot_cle"], "inline": True},
         ],
-        "description": f"[Voir sur Buyee]({annonce['lien_buyee']}) · [Annonce d'origine]({annonce['lien_origine']})",
+        "description": (
+            f"[Voir sur Buyee]({annonce['lien_buyee']}) · [Annonce d'origine]({annonce['lien_origine']})"
+            if annonce["lien_buyee"]
+            else f"⚠️ Enchère Mercari : pas disponible sur Buyee. [Annonce d'origine]({annonce['lien_origine']})"
+        ),
     }
     if annonce["prix"]:
         e["fields"].insert(0, {"name": "Prix", "value": annonce["prix"], "inline": True})
