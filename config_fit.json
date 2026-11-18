@@ -1,0 +1,17 @@
+{
+  "_aide": "Robot peluches Pokémon fit. Il envoie une annonce dans #peluche-pokemon-fit seulement si prix ÷ nombre de peluches < prix_max_par_peluche_euros. Ajoute ou enlève des mots-clés dans la liste (ex. « ポケモンフィット ゲンガー »).",
+  "secret": "DISCORD_WEBHOOK_FIT",
+  "mots_cles": [
+    "ポケモンフィット",
+    "ポケモン fit",
+    "ポケモンフィット ぬいぐるみ",
+    "ポケモンフィット ピカチュウ",
+    "ポケモンフィット イーブイ"
+  ],
+  "prix_max_par_peluche_euros": 8,
+  "le_titre_doit_contenir": ["フィット", "fit"],
+  "_aide_taux": "Le taux du jour est pris automatiquement. Celui-ci ne sert que si Internet ne le donne pas (1 ¥ = 0,0056 €, soit environ 178 ¥ pour 1 €).",
+  "taux_yen_euro_secours": 0.0056,
+  "surveiller_yahoo_auctions": true,
+  "surveiller_mercari": true
+}
