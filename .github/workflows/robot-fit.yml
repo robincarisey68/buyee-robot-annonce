@@ -1,0 +1,52 @@
+name: Robot peluches Pokemon fit
+
+# Deuxième robot, indépendant du « Robot Buyee » : mêmes sites, mais il n'envoie
+# que les annonces Pokémon fit à moins de 8 € par peluche (voir config_fit.json).
+on:
+  schedule:
+    - cron: "15,45 * * * *"   # relance de secours si le robot s'est arrêté
+  workflow_dispatch:           # bouton "Run workflow" pour lancer à la main
+
+permissions:
+  contents: write              # pour enregistrer la mémoire (seen_fit.json)
+
+concurrency:
+  group: robot-fit
+  cancel-in-progress: false
+
+jobs:
+  surveiller:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Surveiller en continu
+        env:
+          DISCORD_WEBHOOK_FIT: ${{ secrets.DISCORD_WEBHOOK_FIT }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PAUSE_SECONDES: 180      # temps entre deux vérifications
+          DUREE_MINUTES: 340       # durée d'un lancement (max GitHub : 360)
+        run: |
+          git config user.name "robot-fit"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fin=$(( $(date +%s) + DUREE_MINUTES * 60 ))
+          while [ "$(date +%s)" -lt "$fin" ]; do
+            git pull -q --rebase -X theirs || git rebase --abort || true   # récupère tes changements de config
+            python robot_fit.py || echo "Passage raté, on réessaie au prochain tour."
+            if [ -f seen_fit.json ]; then
+              git add seen_fit.json
+              if ! git diff --cached --quiet; then
+                git commit -q -m "Mémoire du robot fit"
+                git push -q || { git pull -q --rebase -X theirs && git push -q; } || true
+              fi
+            fi
+            sleep "$PAUSE_SECONDES"
+          done

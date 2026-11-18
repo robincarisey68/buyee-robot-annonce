@@ -60,3 +60,21 @@ Chaque salon a ses propres mots-clés de recherche (dans `config.json`, rubrique
 Une annonce trouvée par plusieurs salons n'est envoyée qu'une fois, dans le premier salon de la liste.
 Quand tu ajoutes un mot-clé, les annonces déjà en ligne pour lui sont mémorisées sans être envoyées.
 Si un secret manque, les annonces de ce salon vont dans #général. Les messages du robot (démarrage, panne) restent dans #général.
+
+## Robot peluches Pokémon fit (#peluche-pokemon-fit)
+
+Un deuxième robot, indépendant du premier (`robot_fit.py`, `config_fit.json`, workflow **Robot peluches Pokemon fit**, mémoire `seen_fit.json`).
+Il cherche sur les mêmes sites, toutes les 3 min, les mots-clés de `config_fit.json`
+(ポケモンフィット, ポケモン fit, ポケモンフィット ぬいぐるみ, ポケモンフィット ピカチュウ, ポケモンフィット イーブイ),
+et ne t'envoie une annonce **que si elle coûte moins de 8 € par peluche** :
+
+1. Prix fixe uniquement : achat immédiat (即決) sur Yahoo, PayPay Flea Market, Mercari. Les enchères sont ignorées.
+2. Nombre de peluches lu dans le titre, sinon dans la description : 3体セット, まとめ売り 29個, 五体, ×4, 全6種…
+   Sans nombre écrit, il compte les noms de Pokémon cités (« ホエルコ ホエルオー » = 2 peluches).
+   S'il ne trouve rien, il n'envoie rien.
+3. Prix de l'annonce ÷ nombre de peluches, converti en euros au taux du jour (sans frais Buyee ni livraison).
+4. L'annonce doit parler de « fit » / « フィット » (dans le titre ou la description).
+
+Pour changer la limite de 8 € ou les mots-clés : modifie `config_fit.json` (crayon ✏️ sur GitHub).
+Lien Discord : secret GitHub `DISCORD_WEBHOOK_FIT` (sans lui, les alertes vont dans #général).
+Au premier lancement, il t'envoie aussi les 10 bonnes affaires déjà en ligne les moins chères.
