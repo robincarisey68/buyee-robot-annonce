@@ -1,14 +1,5 @@
 {
 "vues": [
-"yahoo:h1251997352",
-"yahoo:p1251997522",
-"yahoo:h1251990233",
-"yahoo:p1251992792",
-"yahoo:m1251999322",
-"yahoo:w1251997413",
-"yahoo:x1251991762",
-"yahoo:e1252005401",
-"yahoo:u1252005403",
 "yahoo:h1251990817",
 "yahoo:k1251986839",
 "yahoo:s1252004316",
@@ -19999,7 +19990,16 @@
 "mercari:m56418389861",
 "mercari:m30049706093",
 "mercari:m77221747133",
-"mercari:m56533972575"
+"mercari:m56533972575",
+"mercari:m48906218074",
+"mercari:m69489316375",
+"mercari:m28199033018",
+"mercari:m92012921092",
+"mercari:m81622401375",
+"mercari:m25277572537",
+"mercari:m39488411064",
+"mercari:m34627492755",
+"mercari:m30445107254"
 ],
 "echecs_daffilee": 0,
 "alerte_envoyee": false,
