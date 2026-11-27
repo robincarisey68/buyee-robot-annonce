@@ -1,8 +1,5 @@
 {
 "vues": [
-"yahoo:e1226193481",
-"yahoo:x1123326730",
-"yahoo:q1123328434",
 "yahoo:w1123336390",
 "yahoo:p1123332670",
 "yahoo:d1123331019",
@@ -19999,7 +19996,10 @@
 "mercari:m60107263435",
 "yahoo:z733575250",
 "yahoo:z733573354",
-"mercari:m70567844177"
+"mercari:m70567844177",
+"yahoo:z733578256",
+"yahoo:z733574726",
+"mercari:m22653644147"
 ],
 "echecs_daffilee": 0,
 "alerte_envoyee": false,
